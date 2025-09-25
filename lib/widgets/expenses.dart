@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:expense_tracker/models/expense.dart';
 import 'package:expense_tracker/widgets/expenses_list/expenses_list.dart';
+import 'package:expense_tracker/widgets/new_expense.dart';
 
 class Expenses extends StatefulWidget {
   const Expenses({super.key});
@@ -49,9 +50,8 @@ class _ExpensesState extends State<Expenses> {
   // Method to add new expense
   dynamic _openAddExpenseOverlay() {
     showModalBottomSheet(
-      backgroundColor: const Color.fromARGB(115, 6, 39, 129),
       context: context,
-      builder: (ctx) => const Text("The Form!"),
+      builder: (ctx) => NewExpense(),
     );
   }
 
@@ -59,6 +59,7 @@ class _ExpensesState extends State<Expenses> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        
         title: const Text('Expense Tracker'),
         actions: [
           IconButton(
