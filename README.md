@@ -23,8 +23,10 @@ Follow these steps to set up and run the project locally.
 git clone https://github.com/ojrandy/expense-Tracker.git
 cd expense-Tracker
 
-2. Install Dependencies
-flutter pub get
+2. Install Dependencies used
+      1. flutter
+      2. uuid
+      3. intl
 
 3. Run the App
 flutter run

@@ -6,7 +6,9 @@ import 'package:intl/intl.dart';
 final formatter = DateFormat('MMM d, y');
 
 class NewExpense extends StatefulWidget {
-  const NewExpense({super.key});
+  const NewExpense({super.key, required this.onAddExpense});
+
+  final void Function(Expense expense) onAddExpense;
 
   @override
   State<NewExpense> createState() => _NewExpenseState();
@@ -55,10 +57,58 @@ class _NewExpenseState extends State<NewExpense> {
 
   Category? _selectedCategory; //To store selected Categories
 
+  // The Form validation
+  void _submitExpenseData() {
+    final enteredAmount = double.tryParse(_amountCountroller.text);
+    final amountIsInvalid = enteredAmount == null || enteredAmount <= 0;
+    if (_titleController.text.trim().isEmpty ||
+        amountIsInvalid ||
+        _selectedDate == null ||
+        _selectedCategory == null) {
+      // Show error message
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Invalid Input'),
+          content: const Text(
+            'Please make sure a valid title, amount, date, and category was entered.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+              },
+              child: const Text('Okay'),
+            ),
+          ],
+        ),
+      );
+      return; // This will stop the function from executing further
+    }
+
+    // If the input is valid, we will create a new expense object
+    widget.onAddExpense(
+      Expense(
+        title: _titleController.text,
+        amount: enteredAmount,
+        date: _selectedDate!,
+        category: _selectedCategory!,
+      ),
+    );
+
+    // This will close the bottom sheet and return the new expense to the parent widget
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        48,
+        16,
+        MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
       child: Column(
         children: [
           TextField(
@@ -141,10 +191,7 @@ class _NewExpenseState extends State<NewExpense> {
               ),
               // the btn to save all expenses
               ElevatedButton(
-                onPressed: () {
-                  print(_titleController.text);
-                  print(_amountCountroller.text);
-                },
+                onPressed: _submitExpenseData,
                 child: Text("Save Expense"),
               ),
               // Btn to close and return to the main app

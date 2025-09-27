@@ -28,3 +28,25 @@ class Expense {
   final DateTime date;
   final Category category;
 }
+
+// Creating the Expense bucket to manage the expenses chart
+class ExpenseBucket {
+  const ExpenseBucket({required this.category, required this.expenses});
+
+  // Creating the alternate constructor to create the list of expenses for a particular category and filtering it
+  ExpenseBucket.forCategory(List<Expense> allExpenses, this.category)
+      : expenses = allExpenses
+            .where((expense) => expense.category == category)
+            .toList();
+
+  final Category category;
+  final List<Expense> expenses;
+
+  double get totalExpenses {
+    double sum = 0;
+    for (final expense in expenses) {
+      sum += expense.amount;
+    }
+    return sum;
+  }
+}
