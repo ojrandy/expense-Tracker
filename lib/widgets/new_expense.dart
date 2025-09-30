@@ -1,7 +1,10 @@
-import 'package:expense_tracker/models/expense.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/cupertino.dart';
+
+import 'package:expense_tracker/models/expense.dart';
 
 final formatter = DateFormat('MMM d, y');
 
@@ -28,15 +31,14 @@ class _NewExpenseState extends State<NewExpense> {
   }
 
   /*
-  #This is the first Approach to manage key stroke
-  var _enteredTitle = "";
+      #This is the first Approach to manage key stroke
+      var _enteredTitle = "";
 
-  // This is to store input typed by the user
-  void _saveTitleInput(String inputValue) {
-    _enteredTitle = inputValue;
-  }
-
-*/
+      This is to store input typed by the user
+      void _saveTitleInput(String inputValue) {
+        _enteredTitle = inputValue;
+      }
+    */
   DateTime? _selectedDate;
   // Creating the date picker
   void _presentDatePicker() async {
@@ -65,7 +67,31 @@ class _NewExpenseState extends State<NewExpense> {
         amountIsInvalid ||
         _selectedDate == null ||
         _selectedCategory == null) {
-      // Show error message
+      // Show error message for both IOS and Android
+      // Using the platform property to check the OS and show the respective dialog
+      // cupertinoDialog for IOS
+      if (Platform.isIOS) {
+        showCupertinoDialog(
+          context: context,
+          builder: (ctx) => CupertinoAlertDialog(
+            title: const Text('Invalid Input'),
+            content: const Text(
+              'Please make sure a valid title, amount, date, and category was entered.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                },
+                child: const Text('Okay'),
+              ),
+            ],
+          ),
+        );
+        return; // This will stop the function from executing further
+      }
+      // Material Dialog for Android and others
+      else {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -84,6 +110,7 @@ class _NewExpenseState extends State<NewExpense> {
         ),
       );
       return; // This will stop the function from executing further
+      }
     }
 
     // If the input is valid, we will create a new expense object
@@ -102,110 +129,157 @@ class _NewExpenseState extends State<NewExpense> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        48,
-        16,
-        MediaQuery.of(context).viewInsets.bottom + 16,
-      ),
-      child: Column(
-        children: [
-          TextField(
-            controller: _titleController,
-            maxLength: 50,
-            decoration: InputDecoration(
-              labelText: 'Title',
-              counterText: '',
-              hintText: "e.g. Groceries, Transport, etc.",
+    // using the extra spaces at the buutton by the keyboard and making it scrollable in landscape
+    final keyboardSpace = MediaQuery.of(context).viewInsets.bottom;
+
+    // using the layout builder to get the available width
+    return LayoutBuilder(
+      builder: (ctx, constraints) {
+        final width = constraints.maxWidth;
+
+        return SizedBox(
+          height: double.infinity,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16, 48, 16, keyboardSpace + 16),
+              child: Column(
+                children: [
+                  if (width >= 600)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _titleController,
+                            maxLength: 50,
+                            decoration: InputDecoration(
+                              labelText: 'Title',
+                              counterText: '',
+                              hintText: "e.g. Groceries, Transport, etc.",
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextField(
+                            controller: _amountCountroller,
+                            keyboardType: TextInputType.number,
+                            maxLength: 10,
+                            decoration: const InputDecoration(
+                              labelText: 'Amount',
+                              prefixText: '\$ ',
+                              hintText: "e.g. 100",
+                              counterText: '', // hides the word counter
+                            ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    TextField(
+                      controller: _titleController,
+                      maxLength: 50,
+                      decoration: InputDecoration(
+                        labelText: 'Title',
+                        counterText: '',
+                        hintText: "e.g. Groceries, Transport, etc.",
+                      ),
+                    ),
+
+                  // For the Amount and Date
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    // to ensure everything is center aligned
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _amountCountroller,
+                          keyboardType: TextInputType.number,
+                          maxLength: 10,
+                          decoration: const InputDecoration(
+                            labelText: 'Amount',
+                            prefixText: '\$ ',
+                            hintText: "e.g. 100",
+                            counterText: '', // hides the word counter
+                          ),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Adding Logic to the date field
+                      Expanded(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              _selectedDate == null
+                                  ? 'No date selected'
+                                  : formatter.format(_selectedDate!),
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            IconButton(
+                              onPressed: _presentDatePicker,
+                              icon: const Icon(Icons.calendar_month),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      DropdownButton<Category>(
+                        value: _selectedCategory,
+                        items: Category.values
+                            .map(
+                              (category) => DropdownMenuItem<Category>(
+                                value: category,
+                                child: Text(category.name.toUpperCase()),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedCategory = value;
+                          });
+                        },
+                        // This will check b4 adding the cats
+                        hint: Text(
+                          _selectedCategory == null
+                              ? "Select Category"
+                              : _selectedCategory!.name,
+                        ),
+                      ),
+                      // the btn to save all expenses
+                      ElevatedButton(
+                        onPressed: _submitExpenseData,
+                        child: Text("Save Expense"),
+                      ),
+                      // Btn to close and return to the main app
+                      ElevatedButton(
+                        onPressed: () {
+                          // This will close the drawer and return the context of the initial class
+                          Navigator.pop(context);
+                        },
+                        child: Text("Cancel"),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-
-          // For the Amount and Date
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            // to ensure everything is center aligned
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _amountCountroller,
-                  keyboardType: TextInputType.number,
-                  maxLength: 10,
-                  decoration: const InputDecoration(
-                    labelText: 'Amount',
-                    prefixText: '\$ ',
-                    hintText: "e.g. 100",
-                    counterText: '', // hides the word counter
-                  ),
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                ),
-              ),
-              const SizedBox(width: 16),
-              // Adding Logic to the date field
-              Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(
-                      _selectedDate == null
-                          ? 'No date selected'
-                          : formatter.format(_selectedDate!),
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    IconButton(
-                      onPressed: _presentDatePicker,
-                      icon: const Icon(Icons.calendar_month),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              DropdownButton<Category>(
-                value: _selectedCategory,
-                items: Category.values
-                    .map(
-                      (category) => DropdownMenuItem<Category>(
-                        value: category,
-                        child: Text(category.name.toUpperCase()),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCategory = value;
-                  });
-                },
-                // This will check b4 adding the cats
-                hint: Text(
-                  _selectedCategory == null
-                      ? "Select Category"
-                      : _selectedCategory!.name,
-                ),
-              ),
-              // the btn to save all expenses
-              ElevatedButton(
-                onPressed: _submitExpenseData,
-                child: Text("Save Expense"),
-              ),
-              // Btn to close and return to the main app
-              ElevatedButton(
-                onPressed: () {
-                  // This will close the drawer and return the context of the initial class
-                  Navigator.pop(context);
-                },
-                child: Text("Cancel"),
-              ),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
